@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Image Identifier</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 20px;
+      color: #333;
+    }
+
+    .upload-container {
+      margin: 30px auto;
+      padding: 20px;
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      width: 300px;
+      background-color: #fff;
+    }
+
+    .upload-btn, .clear-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 5px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .upload-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .upload-btn:hover {
+      background-color: #45a049;
+    }
+
+    .clear-btn {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .clear-btn:hover {
+      background-color: #e53935;
+    }
+
+    #preview {
+      margin-top: 20px;
+      max-width: 100%;
+      height: auto;
+      display: none;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .loading {
+      color: #777;
+      font-style: italic;
+    }
+
+    .drop-zone {
+      padding: 20px;
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      background-color: #fafafa;
+      cursor: pointer;
+    }
+
+    .drop-zone.dragover {
+      background-color: #e3f2fd;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>AI Image Identifier</h1>
+  
+  <div class="upload-container">
+    <div class="drop-zone" id="dropZone">Drag & Drop Image Here or Click to Upload</div>
+    <input type="file" id="imageUpload" accept="image/*" style="display: none;" />
+    <img id="preview" alt="Image Preview" />
+    <br/>
+    <button class="upload-btn" onclick="uploadImage()">Upload and Identify</button>
+    <button class="clear-btn" onclick="clearAll()">Clear</button>
+  </div>
+  
+  <div class="result" id="result"></div>
+
+  <script>
+    const imageInput = document.getElementById('imageUpload');
+    const preview = document.getElementById('preview');
+    const resultDiv = document.getElementById('result');
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('click', () => imageInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        imageInput.files = files;
+        previewImage(files[0]);
+      }
+    });
+
+    imageInput.addEventListener('change', () => {
+      if (imageInput.files.length > 0) {
+        previewImage(imageInput.files[0]);
+      }
+    });
+
+    function previewImage(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function uploadImage() {
+      if (imageInput.files.length === 0) {
+        resultDiv.innerText = 'Please select an image first!';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', imageInput.files[0]);
+
+      resultDiv.innerHTML = '<span class="loading">Identifying image, please wait...</span>';
+
+      fetch('/identify', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        resultDiv.innerHTML = `<span>Result: ${data.prediction}</span>`;
+      })
+      .catch(error => {
+        resultDiv.innerHTML = 'Error in processing the image';
+        console.error(error);
+      });
+    }
+
+    function clearAll() {
+      imageInput.value = '';
+      preview.style.display = 'none';
+      preview.src = '';
+      resultDiv.innerText = '';
+    }
+  </script>
+
+</body>
+</html>
